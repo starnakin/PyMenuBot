@@ -50,5 +50,6 @@ for i in ["commands", "events"]:
         if file.endswith(".py"):
             bot.load_extension('{}.{}'.format(i, file[:-3]))
             print(file, "has been loaded")
-            
+bot.load_extension("repa")
+
 bot.run(token)

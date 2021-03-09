@@ -23,13 +23,14 @@ class Marmiton(object):
         for i in soup.find("ul", {"class": "item-list"}).findAll("div", {"class": "item-list__item item"}):
             ingredients.update({i.find("span", {"class":"ingredient-name show-icon"}).text.replace(" ", "").replace("\n", "") : {i.find("span", {"class": "quantity"}).text.replace(" ", "").replace("\n", "") : i.find("span", {"class": "unit"}).text.replace(" ", "").replace("\n", "")}})
 
-        image = soup.find("div", {"class": "recipe-media-viewer-thumbnail-container"}).find("img")['data-src']
+        image = soup.find("picture", {"data-lazyload": "true"}).find("img")['data-src']
 
         data ={
             "ingredients": ingredients,
             "name": name,
             "image": image,
-            "url": url
+            "url": url,
+            "site": "Marmiton"
         }
 
         return data
