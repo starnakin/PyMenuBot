@@ -46,6 +46,5 @@ class Repa(commands.Cog):
             if channel.name == "repas":
                 if payload.emoji.name == "✅":
                     await message.delete()
-                    messages = await channel.history(limit=200).flatten()
 def setup(bot):
     bot.add_cog(Repa(bot))

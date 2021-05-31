@@ -11,8 +11,8 @@ import threading
 import json
 import mysql.connector
 
-prefix=json.load(open("./settings/config.json", "r"))["prefix"]
-token=json.load(open("./settings/config.json", "r"))["token"]
+prefix=json.load(open("/home/starnakin/Documents/home-helper-discord.py/settings/config.json", "r"))["prefix"]
+token=json.load(open("/home/starnakin/Documents/home-helper-discord.py/settings/config.json", "r"))["token"]
 
 bot=commands.Bot(command_prefix=prefix, description="Bot of group !")
 
@@ -45,8 +45,9 @@ async def reload(ctx, name=None):
             bot.load_extension(name)
             print(name, "has been loaded")
             await ctx.send(str(name + " has been loaded"))
+
 for i in ["commands", "events"]:
-    for file in os.listdir("./{}".format(i)):
+    for file in os.listdir("/home/starnakin/Documents/home-helper-discord.py/{}".format(i)):
         if file.endswith(".py"):
             bot.load_extension('{}.{}'.format(i, file[:-3]))
             print(file, "has been loaded")
