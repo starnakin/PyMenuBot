@@ -68,6 +68,7 @@ class Course(commands.Cog):
                         print(l[0])
                         embed = discord.Embed()
                         embed.add_field(name=l[0], value=(extractInt(k),1)[extractInt(k)==0]+extractInt(messages_content.get(l[0])))
+                        embed.set_author(name=message.author.name)
                         await message.channel.send(embed=embed)
                         for i in messages:
                             for emb in i.embeds:
@@ -78,6 +79,7 @@ class Course(commands.Cog):
                     else:
                         embed = discord.Embed()
                         embed.add_field(name=removeInt(k), value=(extractInt(k),1)[extractInt(k)==0])
+                        embed.set_author(name=message.author.name)
                         await message.channel.send(embed=embed)
                         await message.delete()
             else:
@@ -96,10 +98,12 @@ class Course(commands.Cog):
         emoji=payload.emoji.name
         field_value=0
         field_name=""
+        field_author=""
         for embed in message.embeds:
             for field in embed.fields:
                 field_value=int(field.value)
                 field_name=field.name
+                field_author=field.author
 
         if not member == self.bot.user:
             if channel.name == "liste-de-courses":
@@ -110,6 +114,7 @@ class Course(commands.Cog):
                     await message.delete()
                     embed = discord.Embed()
                     embed.add_field(name=field_name, value=field_value-number)
+                    embed.set_author(name=field_author)
                     await message.channel.send(embed=embed)
 
 def setup(bot):
