@@ -48,9 +48,10 @@ async def reload(ctx, name=None):
 
 for i in ["commands", "events"]:
     for file in os.listdir("/home/starnakin/Documents/home-helper-discord.py/{}".format(i)):
-        if file.endswith(".py"):
-            bot.load_extension('{}.{}'.format(i, file[:-3]))
-            print(file, "has been loaded")
+        if file != "classify.py":
+            if file.endswith(".py"):
+                bot.load_extension('{}.{}'.format(i, file[:-3]))
+                print(file, "has been loaded")
 bot.load_extension("repa")
 
 bot.run(token)

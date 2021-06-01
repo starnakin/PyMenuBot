@@ -98,7 +98,7 @@ class Course(commands.Cog):
                     
                     key=removeInt(line)
 
-                    l = difflib.get_close_matches(key.lower(), messages_content.keys(), 1, 0.8)
+                    most_similare = difflib.get_close_matches(key.lower(), messages_content.keys(), 1, 0.8)
 
                     if (extractInt(line)==0):
                         value=1
@@ -107,9 +107,9 @@ class Course(commands.Cog):
                     
                     author=message.author.name
                     
-                    if len(l) == 1:
-                        await key_to_message(messages, l[0]).delete()
-                        await message.channel.send(embed=create_embed(l[0], value+extractInt(messages_content.get(l[0])), author))
+                    if len(most_similare) == 1:
+                        await key_to_message(messages, most_similare[0]).delete()
+                        await message.channel.send(embed=create_embed(most_similare[0], value+extractInt(messages_content.get(most_similare[0])), author))
                         await message.delete()
                     else:
                         await message.channel.send(embed=create_embed(key, value, author))
