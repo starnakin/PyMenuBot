@@ -1,3 +1,4 @@
+from os import replace
 import discord
 from discord import channel
 from discord import embeds
@@ -12,39 +13,73 @@ from discord.ext.commands import bot
 course_dict={}
 num=["1️⃣", "2️⃣", "3️⃣" , "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
 
+#TODO recreate this function because is suck
 def extractInt(text):
     a="0"
     for i in range(len(text)):
         if text[i].isdigit():
             if i!=0:
-                if text[i-1] == " ":
+                if text[i-1] == " " or text[i-1].isdigit():
                     a+=text[i]
             else:
                 a+=text[i]
     return int(a)
 
+#TODO recreate this function because is suck
 def removeInt(text):
     a=""
     for i in range(len(text)):
-        if not text[i].isdigit():
-            a+=text[i]
-        else:
+        if text[i].isdigit():
             if i != 0:
                 if text[i-1] != " ":
                     a+=text[i]
+                elif text[i+1].isdigit():
+                    return a
+
+        else:
+            a+=text[i]
     return a
 
-def containInt(text):
-    for i in range(len(text)):
-        if i!=0:
-            if text[i].isdigit() & text[i-1] == " ":
-                return True
-    return False
+#TODO recreate this function because is suck
+#def containInt(text):
+#    for i in range(len(text)):
+#        if i!=0:
+#            if text[i].isdigit() & text[i-1] == " ":
+#                return True
+#    return False
 
 def emoji_to_number(emoji):
     for i in range(len(num)):
         if num[i] == emoji:
             return i+1
+
+def message_to_field(message):
+    for emb in message.embeds:
+        for field in emb.fields:
+            return field
+
+def create_embed(key, value, author):
+    embed = discord.Embed()
+    embed.add_field(name=key, value=value)
+    embed.set_footer(text=author)
+    return embed
+
+def key_to_message(messages, key):
+    for message in messages:
+        field = message_to_field(message)
+        try:
+            if field.name == key:
+                return message
+        except:
+            pass
+
+def get_messages_content(messages, bot):
+    messages_content={}
+    for message in messages:
+        if message.author == bot.user:
+            field = message_to_field(message)
+            messages_content.update({field.name.lower(): field.value})
+    return messages_content
 
 class Course(commands.Cog):
 
@@ -55,39 +90,40 @@ class Course(commands.Cog):
     async def on_message(self, message):
         if message.channel.name=="liste-de-courses":
             if message.author != self.bot.user:
-                for k in message.content.split("\n"):
+                for line in message.content.split("\n"):
+
                     messages = await message.channel.history(limit=200).flatten()
-                    messages_content={}
-                    for i in messages:
-                        for emb in i.embeds:
-                            for field in emb.fields:
-                                messages_content.update({field.name.lower(): field.value})
+
+                    messages_content=get_messages_content(messages, self.bot)
                     
-                    l = difflib.get_close_matches(removeInt(k).lower(), messages_content.keys(), 1, 0.8)
+                    key=removeInt(line)
+
+                    l = difflib.get_close_matches(key.lower(), messages_content.keys(), 1, 0.8)
+
+                    if (extractInt(line)==0):
+                        value=1
+                    else:
+                        value=extractInt(line)
+                    
+                    author=message.author.name
+                    
                     if len(l) == 1:
-                        print(l[0])
-                        embed = discord.Embed()
-                        embed.add_field(name=l[0], value=(extractInt(k),1)[extractInt(k)==0]+extractInt(messages_content.get(l[0])))
-                        embed.set_author(name=message.author.name)
-                        await message.channel.send(embed=embed)
-                        for i in messages:
-                            for emb in i.embeds:
-                                for field in emb.fields:
-                                    if field.name == l[0]:
-                                        await i.delete()
+                        await key_to_message(messages, l[0]).delete()
+                        await message.channel.send(embed=create_embed(l[0], value+extractInt(messages_content.get(l[0])), author))
                         await message.delete()
                     else:
-                        embed = discord.Embed()
-                        embed.add_field(name=removeInt(k), value=(extractInt(k),1)[extractInt(k)==0])
-                        embed.set_author(name=message.author.name)
-                        await message.channel.send(embed=embed)
+                        await message.channel.send(embed=create_embed(key, value, author))
                         await message.delete()
             else:
-                for embed in message.embeds:
-                    for field in embed.fields:
-                        for i in range(int(field.value)-1):
-                            await message.add_reaction(num[i])
+                field=message_to_field(message)
+                if int(field.value)>11:
+                    max=10
+                else:
+                    max=int(field.value)-1
+                for i in range(0,max):
+                    await message.add_reaction(num[i])
                 await message.add_reaction("✅")
+                await message.add_reaction("➕")
 
     
     @commands.Cog.listener()
@@ -112,10 +148,10 @@ class Course(commands.Cog):
                 elif emoji in num:
                     number=emoji_to_number(emoji)
                     await message.delete()
-                    embed = discord.Embed()
-                    embed.add_field(name=field_name, value=field_value-number)
-                    embed.set_author(name=field_author)
-                    await message.channel.send(embed=embed)
+                    await message.channel.send(embed=create_embed(field_name, field_value-number, field_author))
+                elif emoji == "➕":
+                    await message.delete()
+                    await message.channel.send(embed=create_embed(field_name, field_value+1, field_author))  
 
 def setup(bot):
     bot.add_cog(Course(bot))
