@@ -15,7 +15,8 @@ prefix=json.load(open("./settings/config.json", "r"))["prefix"]
 token=json.load(open("./settings/config.json", "r"))["token"]
 shopping_channel_id=json.load(open("./settings/config.json", "r"))["shopping_channel_id"]
 
-bot=commands.Bot(command_prefix=prefix, description="Bot of group !")
+intents = discord.Intents().all()
+bot=commands.Bot(command_prefix=prefix, description="Bot of group !", intents=intents)
 
 @bot.event
 async def on_ready():
