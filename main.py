@@ -1,19 +1,15 @@
 import discord
 from discord.ext import commands
 
-import asyncio
-
-import cogs
-
 import os 
-import time
-import threading
+import pickle
 import json
-import mysql.connector
 
 prefix=json.load(open("./settings/config.json", "r"))["prefix"]
 token=json.load(open("./settings/config.json", "r"))["token"]
 shopping_channel_id=json.load(open("./settings/config.json", "r"))["shopping_channel_id"]
+
+groceries = pickle.load(open('./settings/courses_fr.pickle', "rb"))
 
 intents = discord.Intents().all()
 bot=commands.Bot(command_prefix=prefix, description="Bot of group !", intents=intents)

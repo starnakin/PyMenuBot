@@ -1,7 +1,7 @@
 num=["1️⃣", "2️⃣", "3️⃣" , "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
 def add_number(old_number, new_number):
     futur_emoji=[]
-    if old_number >= 10:
+    if new_number >= 10:
         return []
     if new_number==old_number:
         return []
@@ -17,9 +17,14 @@ def add_number(old_number, new_number):
             return []
         else:
             futur_emoji.append(num[new_number-1])
-            for i in range(new_number, old_number):
+            if old_number >10:
+                max=10
+            else:
+                max=old_number
+            for i in range(new_number, max):
+                print(i)
                 futur_emoji.append(num[i])
 
     return futur_emoji
 
-print(add_number(2, 3))
+print(add_number(0, 15))

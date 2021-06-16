@@ -77,9 +77,15 @@ def get_messages_content(messages, bot):
             messages_content.update({field.name.lower(): field.value})
     return messages_content
 
+def get_max(number):
+    if number >10:
+        return 10
+    else:
+         return number
+
 def add_number(old_number, new_number):
     futur_emoji=[]
-    if old_number >= 10:
+    if new_number >= 10:
         return []
     if new_number==old_number:
         return []
@@ -95,7 +101,11 @@ def add_number(old_number, new_number):
             return []
         else:
             futur_emoji.append(num[new_number-1])
-            for i in range(new_number, old_number):
+            if old_number >10:
+                max=10
+            else:
+                max=old_number
+            for i in range(new_number, max):
                 futur_emoji.append(num[i])
 
     return futur_emoji
@@ -107,6 +117,8 @@ class Course(commands.Cog):
         
     @commands.Cog.listener()
     async def on_message(self, message):
+        if message.content.startswith('!'):
+            return
         if message.channel.id==shopping_channel_id:
             if message.author != self.bot.user:
                 for line in message.content.split("\n"):
@@ -129,8 +141,6 @@ class Course(commands.Cog):
                     if len(most_similare) == 1:
                         old_message=key_to_message(messages, most_similare[0])
                         await old_message.edit(embed=create_embed(most_similare[0], value+int(messages_content.get(most_similare[0])), author))
-                        for i in add_number(value, value+int(messages_content.get(most_similare[0]))):
-                            await old_message.add_reaction(i)
                         await old_message.clear_reaction("➕")
                         await old_message.add_reaction("➕")
                         await message.delete()
@@ -140,11 +150,7 @@ class Course(commands.Cog):
             else:
                 await message.add_reaction("✅")
                 field=message_to_field(message)
-                if int(field.value)>11:
-                    max=10
-                else:
-                    max=int(field.value)-1
-                for i in range(0,max):
+                for i in range(get_max(int(field.value))):
                     await message.add_reaction(num[i])
                 await message.add_reaction("➕")
 
@@ -153,7 +159,6 @@ class Course(commands.Cog):
     async def on_raw_reaction_add(self, payload):
         guild = self.bot.get_guild(payload.guild_id)
         member = guild.get_member(payload.user_id)
-        print(member)
         channel = self.bot.get_channel(payload.channel_id)
         message = await channel.fetch_message(payload.message_id)
         emoji=payload.emoji.name
@@ -178,11 +183,36 @@ class Course(commands.Cog):
                     if field_value-number>=number:
                         await message.remove_reaction(emoji, member)
                 elif emoji == "➕":
-                    await message.clear_reaction("➕")
-                    if field_value < 11:
-                        await message.add_reaction(num[field_value-1])
-                    await message.add_reaction("➕")
                     await message.edit(embed=create_embed(field_name, field_value+1, field_author))   
+
+    @commands.Cog.listener()
+    async def on_message_edit(self, before, after):
+        if before.channel.id == shopping_channel_id:
+            old_number=int(message_to_field(before).value)
+            new_number=int(message_to_field(after).value)
+            if new_number>old_number:
+                for i in add_number(old_number, new_number):
+                    await after.add_reaction(i)
+                await before.clear_reaction("➕")
+                await before.add_reaction("➕")
+
+    @commands.Cog.listener()
+    async def on_raw_message_edit (self, payload):
+        try:
+            before=payload.cached_message
+            channel = bot.get_channel(payload.channel_id)
+        except:
+            return
+        message_id = payload.message_id
+        after = await channel.fetch_message(message_id)
+        if before.channel.id == shopping_channel_id:
+            old_number=int(message_to_field(before).value)
+            new_number=int(message_to_field(after).value)
+            if new_number>old_number:
+                for i in add_number(old_number, new_number):
+                    await after.add_reaction(i)
+                await before.clear_reaction("➕")
+                await before.add_reaction("➕")
 
 def setup(bot):
     bot.add_cog(Course(bot))
