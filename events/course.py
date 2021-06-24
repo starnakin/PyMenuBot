@@ -9,106 +9,20 @@ import asyncio
 
 import difflib
 
-import json
+from utils import num
+from utils import get_messages_content
+from utils import removeInt
+from utils import extractInt
+from utils import key_to_message
+from utils import create_embed
+from utils import get_messages_content
+from utils import message_to_property
+from utils import add_number
+from utils import emoji_to_number
+from utils import get_property_by_product_name
 
 from discord.ext.commands import bot
 
-#TODO get the more optimised between delkete message and edit the message
-course_dict={}
-num=["1️⃣", "2️⃣", "3️⃣" , "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
-
-#TODO recreate this function because is suck
-def extractInt(text):
-    a="0"
-    for i in range(len(text)):
-        if text[i].isdigit():
-            if i!=0:
-                if text[i-1] == " " or text[i-1].isdigit():
-                    a+=text[i]
-            else:
-                a+=text[i]
-    return int(a)
-
-#TODO recreate this function because is suck
-def removeInt(text):
-    a=""
-    for i in range(len(text)):
-        if text[i].isdigit():
-            if i != 0:
-                if text[i-1] != " ":
-                    a+=text[i]
-                elif text[i+1].isdigit():
-                    return a
-
-        else:
-            a+=text[i]
-    return a
-
-def emoji_to_number(emoji):
-    for i in range(len(num)):
-        if num[i] == emoji:
-            return i+1
-
-def message_to_field(message):
-    for emb in message.embeds:
-        for field in emb.fields:
-            return field
-
-def create_embed(key, value, author):
-    embed = discord.Embed()
-    embed.add_field(name=key, value=value)
-    embed.set_footer(text=author)
-    return embed
-
-def key_to_message(messages, key):
-    for message in messages:
-        field = message_to_field(message)
-        try:
-            if field.name == key:
-                return message
-        except:
-            pass
-
-def get_messages_content(messages, bot):
-    messages_content={}
-    for message in messages:
-        if message.author == bot.user:
-            field = message_to_field(message)
-            messages_content.update({field.name.lower(): field.value})
-    return messages_content
-
-def get_max(number):
-    if number >10:
-        return 10
-    else:
-         return number
-
-def add_number(old_number, new_number):
-    futur_emoji=[]
-    if new_number >= 10:
-        return []
-    if new_number==old_number:
-        return []
-    if new_number>old_number:
-        if new_number > 10:
-            for i in range(old_number, 10):
-                futur_emoji.append(num[i])
-        else:
-            for i in range(old_number-1, new_number-1):
-                futur_emoji.append(num[i])
-    else:
-        if new_number > 10:
-            return []
-        else:
-            futur_emoji.append(num[new_number-1])
-            if old_number >10:
-                max=10
-            else:
-                max=old_number
-            for i in range(new_number, max):
-                futur_emoji.append(num[i])
-
-    return futur_emoji
 
 class Course(commands.Cog):
 
@@ -123,7 +37,7 @@ class Course(commands.Cog):
             if message.author != self.bot.user:
                 for line in message.content.split("\n"):
 
-                    messages = await message.channel.history(limit=200).flatten()
+                    messages = await message.channel.history(limit=1000).flatten()
 
                     messages_content=get_messages_content(messages, self.bot)
                     
@@ -140,18 +54,20 @@ class Course(commands.Cog):
                     
                     if len(most_similare) == 1:
                         old_message=key_to_message(messages, most_similare[0])
-                        await old_message.edit(embed=create_embed(most_similare[0], value+int(messages_content.get(most_similare[0])), author))
+                        content = messages_content.get(most_similare[0])
+                        await old_message.edit(embed=create_embed(most_similare[0], value+content.get("value"), author, content.get("image"), content.get("price"), content.get("rayon")))
                         await old_message.clear_reaction("➕")
                         await old_message.add_reaction("➕")
                         await message.delete()
                     else:
-                        await message.channel.send(embed=create_embed(key, value, author))
+                        semiproperty = get_property_by_product_name(key)
+                        await message.channel.send(embed=create_embed(key, value, author, semiproperty.get("image"), semiproperty.get("price"), semiproperty.get("rayon")))
                         await message.delete()
             else:
                 await message.add_reaction("✅")
-                field=message_to_field(message)
-                for i in range(get_max(int(field.value))):
-                    await message.add_reaction(num[i])
+                property=message_to_property(message)
+                for i in add_number(1, property.get("quantity")):
+                    await message.add_reaction(i)
                 await message.add_reaction("➕")
 
     
@@ -162,34 +78,32 @@ class Course(commands.Cog):
         channel = self.bot.get_channel(payload.channel_id)
         message = await channel.fetch_message(payload.message_id)
         emoji=payload.emoji.name
-        field_value=0
-        field_name=""
-        field_author=""
-        for embed in message.embeds:
-            for field in embed.fields:
-                field_value=int(field.value)
-                field_name=field.name
-                field_author=field.author
-
+        property = message_to_property(message)
+        product=property.get("product")
+        quantity=property.get("quantity")
+        image=property.get("image")
+        author=property.get("author")
+        price=property.get("price")
+        rayon=property.get("rayon")
         if not member == self.bot.user:
             if channel.id == shopping_channel_id:
                 if emoji == "✅":
                     await message.delete()
                 elif emoji in num:
                     number=emoji_to_number(emoji)
-                    await message.edit(embed=create_embed(field_name, field_value-number, field_author))
-                    for i in add_number(field_value, field_value-number):
+                    await message.edit(embed=create_embed(product, quantity-number, author, image, price, rayon))
+                    for i in add_number(quantity, quantity-number):
                         await message.clear_reaction(i)
-                    if field_value-number>=number:
+                    if quantity-number>=number:
                         await message.remove_reaction(emoji, member)
                 elif emoji == "➕":
-                    await message.edit(embed=create_embed(field_name, field_value+1, field_author))   
+                    await message.edit(embed=create_embed(product, quantity+1, author, image, price, rayon))
 
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
         if before.channel.id == shopping_channel_id:
-            old_number=int(message_to_field(before).value)
-            new_number=int(message_to_field(after).value)
+            old_number=int(message_to_property(before).get("quantity"))
+            new_number=int(message_to_property(after).get("quantity"))
             if new_number>old_number:
                 for i in add_number(old_number, new_number):
                     await after.add_reaction(i)
@@ -206,8 +120,8 @@ class Course(commands.Cog):
         message_id = payload.message_id
         after = await channel.fetch_message(message_id)
         if before.channel.id == shopping_channel_id:
-            old_number=int(message_to_field(before).value)
-            new_number=int(message_to_field(after).value)
+            old_number=int(message_to_property(before).get("quantity"))
+            new_number=int(message_to_property(after).get("quantity"))
             if new_number>old_number:
                 for i in add_number(old_number, new_number):
                     await after.add_reaction(i)
