@@ -10,4 +10,4 @@ This bot have some good feature like :
 
 ## If you have some bugs or any idea make an issue
 
-![alt tag] https://cdn.discordapp.com/attachments/384812508776628225/857966657440186378/unknown.png
+![alt tag](https://cdn.discordapp.com/attachments/384812508776628225/857966657440186378/unknown.png)
