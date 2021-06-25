@@ -8,6 +8,6 @@ This bot have some good feature like :
   * Orthographe tolerance (banana and bananas are merged in one item)
   * Be updated all time (I use It since few month so if have an idea I add It)
 
-## If you have some bugs or any idea make an issue
-
 ![alt tag](https://cdn.discordapp.com/attachments/384812508776628225/857966657440186378/unknown.png)
+
+## If you have some bugs or any idea make an issue
