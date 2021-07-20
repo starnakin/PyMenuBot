@@ -1,25 +1,20 @@
-from os import replace
 import discord
-from discord import channel
 from discord import embeds
 from discord.ext import commands
-from main import shopping_channel_id
-
-import asyncio
-
-import difflib
+from main import shopping_category
 
 from utils import num
-from utils import get_messages_content
 from utils import removeInt
 from utils import extractInt
-from utils import key_to_message
-from utils import create_embed
-from utils import get_messages_content
-from utils import message_to_property
 from utils import add_number
 from utils import emoji_to_number
-from utils import get_property_by_product_name
+
+from article import Article
+from grocery import Grocery
+from groceries_list import GroceriesList
+from groceries_lists import GroceriesLists
+
+from main import groceries_lists
 
 from discord.ext.commands import bot
 
@@ -31,102 +26,119 @@ class Course(commands.Cog):
         
     @commands.Cog.listener()
     async def on_message(self, message):
+
         if message.content.startswith('!'):
             return
-        if message.channel.id==shopping_channel_id:
+
+        if message.channel.category.name==shopping_category:
+
             if message.author != self.bot.user:
+
+                guild = message.guild
+
                 for line in message.content.split("\n"):
 
-                    messages = await message.channel.history(limit=1000).flatten()
+                    quantity = extractInt(line)
 
-                    messages_content=get_messages_content(messages, self.bot)
+                    if quantity == 0:
+                        quantity=1
                     
-                    key=removeInt(line)
+                    article = Article(removeInt(line), quantity, message.author.name)
+                    groceries_list = groceries_lists.get_groceries_list_by_id(guild.id)
 
-                    most_similare = difflib.get_close_matches(key.lower(), messages_content.keys(), 1, 0.8)
+                    if groceries_list != None:
 
-                    if (extractInt(line)==0):
-                        value=1
+                        grocery = groceries_list.get_by_id(message.channel.id)
+
+                        if grocery != None:
+
+                            similar_article = grocery.get_similare(article.similar_article)
+
+                            if similar_article != None:
+
+                                old_message = await message.channel.fetch_message(similar_article.message_id)
+                                similar_article.add_quantity(article.quantity)
+                                await old_message.edit(embed=similar_article.to_embed())
+
+                                for i in add_number(similar_article.quantity-article.quantity, similar_article.quantity):
+                                    await old_message.add_reaction(i)
+
+                                await old_message.clear_reaction("➕")
+                                await old_message.add_reaction("➕")
+
+                            else:
+                                new_message = await message.channel.send(embed=article.to_embed())
+                                article.message_id=new_message.id
+                                grocery.add(article)
+                        else:
+                            groceries_list.add(Grocery(message.channel.id, [article]))
+                            new_message = await message.channel.send(embed=article.to_embed())
+                            article.message_id=new_message.id
                     else:
-                        value=extractInt(line)
-                    
-                    author=message.author.name
-                    
-                    if len(most_similare) == 1:
-                        old_message=key_to_message(messages, most_similare[0])
-                        content = messages_content.get(most_similare[0])
-                        await old_message.edit(embed=create_embed(most_similare[0], value+content.get("value"), author, content.get("image"), content.get("price"), content.get("rayon")))
-                        await old_message.clear_reaction("➕")
-                        await old_message.add_reaction("➕")
-                        await message.delete()
-                    else:
-                        semiproperty = get_property_by_product_name(key)
-                        await message.channel.send(embed=create_embed(key, value, author, semiproperty.get("image"), semiproperty.get("price"), semiproperty.get("rayon")))
-                        await message.delete()
+                        groceries_lists.add(GroceriesList(guild, Grocery(message.channel.id, [article])))
+                        new_message = await message.channel.send(embed=article.to_embed())
+                        article.message_id=new_message.id
+                    await message.delete()
             else:
                 await message.add_reaction("✅")
-                property=message_to_property(message)
-                for i in add_number(1, property.get("quantity")):
+                embed_quantity = int(message.embeds[0].fields[0].value)
+                for i in add_number(1, embed_quantity):
                     await message.add_reaction(i)
                 await message.add_reaction("➕")
 
-    
+    @commands.Cog.listener()
+    async def on_guild_channel_create(self, channel):
+        if channel.category.name == shopping_category:
+            groceries_list=groceries_lists.get_groceries_list_by_id(channel.guild.id)
+            groceries_list.add(Grocery(channel.id, []))
+
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
+
         guild = self.bot.get_guild(payload.guild_id)
         member = guild.get_member(payload.user_id)
-        channel = self.bot.get_channel(payload.channel_id)
-        message = await channel.fetch_message(payload.message_id)
-        emoji=payload.emoji.name
-        property = message_to_property(message)
-        product=property.get("product")
-        quantity=property.get("quantity")
-        image=property.get("image")
-        author=property.get("author")
-        price=property.get("price")
-        rayon=property.get("rayon")
-        if not member == self.bot.user:
-            if channel.id == shopping_channel_id:
+
+        if member != self.bot.user:
+
+            channel = self.bot.get_channel(payload.channel_id)
+
+            if channel.category.name == shopping_category:
+
+                message = await channel.fetch_message(payload.message_id)
+                emoji=payload.emoji.name
+
+                groceries_list = groceries_lists.get_groceries_list_by_id(guild.id)
+                grocery = groceries_list.get_by_id(channel.id)
+                article = grocery.get_article_by_message_id(message.id)
+
                 if emoji == "✅":
+
+                    grocery.remove(article)
                     await message.delete()
+
                 elif emoji in num:
+
                     number=emoji_to_number(emoji)
-                    await message.edit(embed=create_embed(product, quantity-number, author, image, price, rayon))
-                    for i in add_number(quantity, quantity-number):
+                    old_quantity=article.quantity
+                    article.add_quantity(-number)
+    
+                    await message.edit(embed=article.to_embed())
+
+                    for i in add_number(old_quantity, article.quantity):
                         await message.clear_reaction(i)
-                    if quantity-number>=number:
-                        await message.remove_reaction(emoji, member)
+
+                    await message.remove_reaction(emoji, member)
+
                 elif emoji == "➕":
-                    await message.edit(embed=create_embed(product, quantity+1, author, image, price, rayon))
 
-    @commands.Cog.listener()
-    async def on_message_edit(self, before, after):
-        if before.channel.id == shopping_channel_id:
-            old_number=int(message_to_property(before).get("quantity"))
-            new_number=int(message_to_property(after).get("quantity"))
-            if new_number>old_number:
-                for i in add_number(old_number, new_number):
-                    await after.add_reaction(i)
-                await before.clear_reaction("➕")
-                await before.add_reaction("➕")
+                    await message.edit(embed=article.add_quantity(1).to_embed())
 
-    @commands.Cog.listener()
-    async def on_raw_message_edit (self, payload):
-        try:
-            before=payload.cached_message
-            channel = bot.get_channel(payload.channel_id)
-        except:
-            return
-        message_id = payload.message_id
-        after = await channel.fetch_message(message_id)
-        if before.channel.id == shopping_channel_id:
-            old_number=int(message_to_property(before).get("quantity"))
-            new_number=int(message_to_property(after).get("quantity"))
-            if new_number>old_number:
-                for i in add_number(old_number, new_number):
-                    await after.add_reaction(i)
-                await before.clear_reaction("➕")
-                await before.add_reaction("➕")
+                    for i in add_number(article.quantity-1, article.quantity):
+                        await message.add_reaction(i)
+                        
+                    await message.clear_reaction("➕")
+                    await message.add_reaction("➕")
+
 
 def setup(bot):
     bot.add_cog(Course(bot))

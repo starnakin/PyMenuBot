@@ -1,52 +1,82 @@
+import discord
+from discord import embeds
 from discord.ext import commands
+from discord.ext.commands import bot
 
-from main import shopping_channel_id
-from utils import create_embed
+from main import groceries_lists
+from main import shopping_category
+
+from utils import num
 from utils import removeInt
 from utils import extractInt
-from utils import get_messages_content
-from utils import key_to_message
+from utils import add_number
 
-import  difflib
+from article import Article
+from grocery import Grocery
+from groceries_list import GroceriesList
+from groceries_lists import GroceriesLists
 
 class Old(commands.Cog):
+
     def __init__(self, bot):
         self.bot = bot
-
+        
     @commands.command()
     async def old(self, ctx):
-        await ctx.message.delete()
-        shopping_channel = self.bot.get_channel(shopping_channel_id)
-        messages = await shopping_channel.history(limit=1000).flatten()
-        for message in messages:
-            if message.author != self.bot.user:
-                for line in message.content.split("\n"):
-                    print(line)
-                    messages_content=get_messages_content(messages, self.bot)
 
-                    key=removeInt(line)
+        if ctx.channel.category.name==shopping_category:
 
-                    most_similare = difflib.get_close_matches(key.lower(), messages_content.keys(), 1, 0.8)
+            guild = ctx.guild
+            messages = await ctx.channel.history(limit=1000).flatten()
+            for message in messages:
+                if message.content.startswith('!'):
+                    await message.delete()
+                else:
+                    if message.author != self.bot.user:
 
-                    if (extractInt(line)==0):
-                        value=1
-                    else:
-                        value=extractInt(line)
-                    
-                    author=message.author.name
-                    
-                    if len(most_similare) == 1:
-                        old_message=key_to_message(messages, most_similare[0])
-                        await old_message.edit(embed=create_embed(most_similare[0], value+int(messages_content.get(most_similare[0])), author))
-                        await old_message.clear_reaction("➕")
-                        await old_message.add_reaction("➕")
-                        await message.delete()
-                    else:
-                        print(value, key)
-                        await message.channel.send(embed=create_embed(key, value, author))
-                        await message.delete()
-                
+                        for line in message.content.split("\n"):
 
+                            quantity = extractInt(line)
+
+                            if quantity == 0:
+                                quantity=1
+                            
+                            article = Article(removeInt(line), quantity, message.author.name)
+                            groceries_list = groceries_lists.get_groceries_list_by_id(guild.id)
+
+                            if groceries_list != None:
+
+                                grocery = groceries_list.get_by_id(message.channel.id)
+
+                                if grocery != None:
+
+                                    similar_article = grocery.get_similare(article.similar_article)
+
+                                    if similar_article != None:
+
+                                        old_message = await message.channel.fetch_message(similar_article.message_id)
+                                        similar_article.add_quantity(article.quantity)
+                                        await old_message.edit(embed=similar_article.to_embed())
+
+                                        for i in add_number(similar_article.quantity-article.quantity, similar_article.quantity):
+                                            await old_message.add_reaction(i)
+
+                                        await old_message.clear_reaction("➕")
+                                        await old_message.add_reaction("➕")
+
+                                    else:
+                                        new_message = await message.channel.send(embed=article.to_embed())
+                                        article.message_id=new_message.id
+                                        grocery.add(article)
+                                else:
+                                    groceries_list.add(Grocery(message.channel.id, [article]))
+                                    new_message = await message.channel.send(embed=article.to_embed())
+                                    article.message_id=new_message.id
+                            else:
+                                groceries_lists.add(GroceriesList(guild, Grocery(message.channel.id, [article])))
+                                new_message = await message.channel.send(embed=article.to_embed())
+                                article.message_id=new_message.id
+                    await message.delete()
 
 def setup(bot):
     bot.add_cog(Old(bot))

@@ -26,30 +26,6 @@ def emoji_to_number(emoji):
         if num[i] == emoji:
             return i+1
 
-def create_embed(product, quantity, author, image, price, rayon):
-    embed = discord.Embed()
-    embed.add_field(name=product, value=quantity)
-    embed.set_thumbnail(url=image)
-    embed.set_footer(text=rayon + " | "+str(price)+"€"+" | "+author)
-    return embed
-
-def key_to_message(messages, key):
-    for message in messages:
-        property = message_to_property(message)
-        try:
-            if property.get("product") == key:
-                return message
-        except:
-            pass
-
-def get_messages_content(messages, bot):
-    messages_content={}
-    for message in messages:
-        if message.author == bot.user:
-            property= message_to_property(message)
-            messages_content.update({property.get("product").lower(): {"value": int(property.get("quantity")), "image": property.get("image"), "price": property.get("price"), "rayon": property.get("rayon")}})
-    return messages_content
-
 def get_max(number):
     if number >10:
         return 10
@@ -85,40 +61,24 @@ def add_number(old_number, new_number):
 
     return futur_emoji
 
-def url_to_img(url):
-    open("./img/last_img.png","wb").write(requests.get(url))
-
-def message_to_property(message):
-    for i in message.embeds:
-        return get_embed_property(i)
-
-def get_embed_property(embed):
-    for field in embed.fields:
-        product=field.name
-        quantity=int(field.value)
-    footer=embed.footer.text.split(" | ")
-    rayon=footer[0]
-    price=float(footer[1].replace("€", ""))
-    author=footer[2]
-    image=embed.thumbnail.url
-    return {"product":product,"quantity":quantity,"rayon":rayon,"price":price,"author":author,"image":image}
-
 def get_property_by_product_name(product_name):
     html_content = urllib.request.urlopen("https://www.carrefour.fr/s?q="+product_name).read()
     soup = BeautifulSoup(html_content, 'html.parser')
 
     first_result=soup.find_all("li", {"class": "product-grid-item"})[0]
 
+    most_similar=first_result.text.replace("\n", "").replace("  ", "")
+
     product_url="https://www.carrefour.fr"+first_result.find("a", {"class":"product-card-image"})["href"]
     img="https://www.carrefour.fr"+first_result.find("a", {"class":"product-card-image"}).find("img")["data-src"]
 
-    quantity=soup.find_all("div", {"class": "ds-format ds-product-card__shimzone--small"}) #TODO make work it
+    #quantity=soup.find_all("div", {"class": "ds-format ds-product-card__shimzone--small"}) #TODO make work it
 
     price=float(first_result.find("div", {"class": "product-card-price__price"}).text.replace("\n", "").replace(" ", "").replace("€", "").replace(",", "."))
 
     html_content = urllib.request.urlopen(product_url).read()
     soup = BeautifulSoup(html_content, 'html.parser')
 
-    rayon=soup.find_all("li", {"class":"breadcrumb-trail__item"})[2].text
+    category=soup.find_all("li", {"class":"breadcrumb-trail__item"})[2].text
     
-    return {"image": img, "price": price, "rayon": rayon}
+    return {"image": img, "price": price, "category": category, "most_similar": most_similar}
