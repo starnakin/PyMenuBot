@@ -22,7 +22,6 @@ bot=commands.Bot(command_prefix=prefix, description="Bot of group !", intents=in
 @bot.event
 async def on_ready():
     for guild in bot.guilds:
-        print(guild.id)
         groceries_list = GroceriesList(guild.id, [])
         categories = get(guild.categories, name = shopping_category)
         if categories == None:
@@ -35,7 +34,7 @@ async def on_ready():
                     for embed in message.embeds:
                         for field in embed.fields:
                             footer=embed.footer.text.split(" | ")
-                            groceries_list.add(grocery.add(Article(field.name, int(field.value), footer[2], message_id=int(message.id))))
+                            groceries_list.add(grocery.add(Article(field.name, int(field.value), footer[2], message_id=int(message.id), most_similar=footer[0])))
         groceries_lists.add(groceries_list)
     print("Bot Started !")
 

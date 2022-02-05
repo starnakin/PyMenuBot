@@ -24,6 +24,7 @@ class Article():
     
     def to_embed(self):
         embed = Embed()
+        embed.set_thumbnail(url=self.image)
         embed.add_field(name=self.name, value=self.quantity)
-        embed.set_footer(text=self.category + " | "+str(self.price)+"€"+" | "+self.author)
+        embed.set_footer(text=self.similar_article + " | "+str(self.price)+"€"+" | "+self.author)
         return embed

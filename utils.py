@@ -1,7 +1,8 @@
 import discord
 from bs4 import BeautifulSoup
-import urllib
 import requests
+import uuid
+
 #TODO get the more optimised between delkete message and edit the message
 num=["1️⃣", "2️⃣", "3️⃣" , "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
 
@@ -62,23 +63,20 @@ def add_number(old_number, new_number):
     return futur_emoji
 
 def get_property_by_product_name(product_name):
-    html_content = urllib.request.urlopen("https://www.carrefour.fr/s?q="+product_name).read()
+
+
+    html_content = requests.get("https://www.auchan.fr/recherche?text="+product_name).text
     soup = BeautifulSoup(html_content, 'html.parser')
 
-    first_result=soup.find_all("li", {"class": "product-grid-item"})[0]
+    detail = soup.findAll("a", {"class": "product-thumbnail__details-wrapper"})
+    if detail != None:
+        img= detail[0].find("figure").find("img")["src"]
+        most_similar=detail[0].find("p", {"class":"product-thumbnail__description"}).text.replace("  ","").replace("\n", "")
+    else:
+        img="https://www.torkartingowy.eu/wp-content/uploads/2021/03/mobile_404.png"
+        most_similar=str(product_name)
 
-    most_similar=first_result.text.replace("\n", "").replace("  ", "")
+    price=0
+    category=str(uuid.uuid4())
 
-    product_url="https://www.carrefour.fr"+first_result.find("a", {"class":"product-card-image"})["href"]
-    img="https://www.carrefour.fr"+first_result.find("a", {"class":"product-card-image"}).find("img")["data-src"]
-
-    #quantity=soup.find_all("div", {"class": "ds-format ds-product-card__shimzone--small"}) #TODO make work it
-
-    price=float(first_result.find("div", {"class": "product-card-price__price"}).text.replace("\n", "").replace(" ", "").replace("€", "").replace(",", "."))
-
-    html_content = urllib.request.urlopen(product_url).read()
-    soup = BeautifulSoup(html_content, 'html.parser')
-
-    category=soup.find_all("li", {"class":"breadcrumb-trail__item"})[2].text
-    
     return {"image": img, "price": price, "category": category, "most_similar": most_similar}

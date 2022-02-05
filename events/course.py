@@ -109,6 +109,7 @@ class Course(commands.Cog):
 
                 groceries_list = groceries_lists.get_groceries_list_by_id(guild.id)
                 grocery = groceries_list.get_by_id(channel.id)
+
                 article = grocery.get_article_by_message_id(message.id)
 
                 if emoji == "✅":
