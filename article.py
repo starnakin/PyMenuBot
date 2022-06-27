@@ -10,7 +10,7 @@ class Article():
         self.recurrent = recurrent
     
     def add_quantity(self, added_quantity):
-        self.quantity+=added_quantity
+        self.quantity=str(added_quantity+int(self.quantity))
         return self
     
     def toogle_recurrency(self):
@@ -20,7 +20,7 @@ class Article():
     def to_embed(self):
         embed = Embed(title=self.name)
         embed.set_thumbnail(url=self.image)
-        embed.add_field(name="quantité", value=self.quantity)
+        embed.add_field(name="quantité", value=str(self.quantity))
         if self.price != "0.0":
             embed.add_field(name="prix", value=self.price)
         if self.recurrent:

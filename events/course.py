@@ -92,8 +92,6 @@ class Course(commands.Cog):
 
                 groceries_list = groceries_lists.get_groceries_list_by_id(guild.id)
                 grocery = groceries_list.get_by_id(channel.id)
-                for article in grocery.grocery:
-                    print(article.name)
                 article = grocery.get_article_by_message_id(message.id)
 
                 if emoji == "✅":
@@ -108,12 +106,12 @@ class Course(commands.Cog):
                 elif emoji in num:
 
                     number=emoji_to_number(emoji)
-                    old_quantity=article.quantity
+                    old_quantity=int(article.quantity)
                     article.add_quantity(-number)
     
                     await message.edit(embed=article.to_embed())
 
-                    for i in add_number(old_quantity, article.quantity):
+                    for i in add_number(old_quantity, int(article.quantity)):
                         await message.clear_reaction(i)
 
                     await message.remove_reaction(emoji, member)
@@ -122,7 +120,7 @@ class Course(commands.Cog):
 
                     await message.edit(embed=article.add_quantity(1).to_embed())
 
-                    for i in add_number(article.quantity-1, article.quantity):
+                    for i in add_number(int(article.quantity)-1, int(article.quantity)):
                         await message.add_reaction(i)
                         
                     await message.clear_reaction("➕")

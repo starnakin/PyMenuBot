@@ -40,7 +40,6 @@ async def on_ready():
                                 article.quantity = field.value
                             if field.name == "recurrent":
                                 article.recurrent = field.value
-                            print(article.recurrent)
                         article.author=embed.footer.text
                         article.message_id=message.id
                         article.image=embed.thumbnail.url
