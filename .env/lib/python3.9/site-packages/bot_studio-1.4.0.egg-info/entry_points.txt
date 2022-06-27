@@ -1,0 +1,3 @@
+[console_scripts]
+datakund = bot_studio.dk_studio:main
+

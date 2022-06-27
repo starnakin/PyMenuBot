@@ -4,10 +4,9 @@ from discord.ext import commands
 from main import shopping_category
 
 from utils import num
-from utils import removeInt
-from utils import extractInt
 from utils import add_number
 from utils import emoji_to_number
+from utils import get_property
 
 from article import Article
 from grocery import Grocery
@@ -38,12 +37,9 @@ class Course(commands.Cog):
 
                 for line in message.content.split("\n"):
 
-                    quantity = extractInt(line)
-
-                    if quantity == 0:
-                        quantity=1
+                    name, quantity, price, img= get_property(line)
                     
-                    article = Article(removeInt(line), quantity, message.author.name)
+                    article = Article(name, quantity, message.author.name, price=price, image=img)
                     groceries_list = groceries_lists.get_groceries_list_by_id(guild.id)
 
                     if groceries_list != None:
@@ -52,24 +48,10 @@ class Course(commands.Cog):
 
                         if grocery != None:
 
-                            similar_article = grocery.get_similare(article.similar_article)
-
-                            if similar_article != None:
-
-                                old_message = await message.channel.fetch_message(similar_article.message_id)
-                                similar_article.add_quantity(article.quantity)
-                                await old_message.edit(embed=similar_article.to_embed())
-
-                                for i in add_number(similar_article.quantity-article.quantity, similar_article.quantity):
-                                    await old_message.add_reaction(i)
-
-                                await old_message.clear_reaction("➕")
-                                await old_message.add_reaction("➕")
-
-                            else:
-                                new_message = await message.channel.send(embed=article.to_embed())
-                                article.message_id=new_message.id
-                                grocery.add(article)
+                            new_message = await message.channel.send(embed=article.to_embed())
+                            article.message_id=new_message.id
+                            grocery.add(article)
+                            
                         else:
                             groceries_list.add(Grocery(message.channel.id, [article]))
                             new_message = await message.channel.send(embed=article.to_embed())
@@ -85,6 +67,7 @@ class Course(commands.Cog):
                 for i in add_number(1, embed_quantity):
                     await message.add_reaction(i)
                 await message.add_reaction("➕")
+                await message.add_reaction("🕒")
 
     @commands.Cog.listener()
     async def on_guild_channel_create(self, channel):
@@ -109,13 +92,18 @@ class Course(commands.Cog):
 
                 groceries_list = groceries_lists.get_groceries_list_by_id(guild.id)
                 grocery = groceries_list.get_by_id(channel.id)
-
+                for article in grocery.grocery:
+                    print(article.name)
                 article = grocery.get_article_by_message_id(message.id)
 
                 if emoji == "✅":
-
-                    grocery.remove(article)
-                    await message.delete()
+                    if article.recurrent:
+                        await message.delete()
+                        new_message = await message.channel.send(embed=article.to_embed())
+                        article.message_id=new_message.id
+                    else:
+                        grocery.remove(article)
+                        await message.delete()
 
                 elif emoji in num:
 
@@ -139,6 +127,15 @@ class Course(commands.Cog):
                         
                     await message.clear_reaction("➕")
                     await message.add_reaction("➕")
+                    await message.clear_reaction("🕒")
+                    await message.add_reaction("🕒")
+                
+                elif emoji == "🕒":
+
+                    await message.edit(embed=article.toogle_recurrency().to_embed())
+
+                    await message.clear_reaction("🕒")
+                    await message.add_reaction("🕒")
 
 
 def setup(bot):

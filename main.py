@@ -32,9 +32,20 @@ async def on_ready():
             for message in messages:
                 if message.author == bot.user:
                     for embed in message.embeds:
+                        article = Article(embed.title)
                         for field in embed.fields:
-                            footer=embed.footer.text.split(" | ")
-                            groceries_list.add(grocery.add(Article(field.name, int(field.value), footer[2], message_id=int(message.id), most_similar=footer[0])))
+                            if field.name == 'prix':
+                                article.price = field.value
+                            if field.name == "quantity":
+                                article.quantity = field.value
+                            if field.name == "recurrent":
+                                article.recurrent = field.value
+                            print(article.recurrent)
+                        article.author=embed.footer.text
+                        article.message_id=message.id
+                        article.image=embed.thumbnail.url
+                        groceries_list.add(grocery.add(article))
+                        
         groceries_lists.add(groceries_list)
     print("Bot Started !")
 

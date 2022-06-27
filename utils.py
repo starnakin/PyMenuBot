@@ -1,26 +1,46 @@
 import discord
-from bs4 import BeautifulSoup
-import requests
-import uuid
+import GoogleImageScraper
 
 #TODO get the more optimised between delkete message and edit the message
 num=["1️⃣", "2️⃣", "3️⃣" , "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
 
-#TODO recreate this function because is suck
-def extractInt(text):
-    a="0"
-    for i in text:
-        if i.isdigit():
-            a+=i
-    return int(a)
+def get_property(text:str):
+    price:str = "0.0"
+    name:str = ""
+    quantity:str = 1
 
-#TODO recreate this function because is suck
-def removeInt(text):
-    a=""
-    for i in(text):
-        if not i.isdigit():
-            a+=i
-    return a
+    text.replace(",", ".")
+    args = text.split(" ")
+    str_quantity=""
+    for arg in args:
+        if arg.endswith("€"):
+            str_price=""
+            for letter in arg[:-1][::-1]:
+                if letter.isdigit() or letter == ".":
+                    str_price+=letter
+            price = str_price[::-1]
+        else:
+            for letter in arg:
+                if letter.isdigit():
+                    str_quantity+=letter
+                else:
+                    name+=arg+" "
+                    break
+                    break
+            if str_quantity == "":
+                quantity="1"
+            else:
+                quantity=str_quantity                    
+    try:
+        urls=GoogleImageScraper.urls(name)
+    except:
+        urls=["https://camo.githubusercontent.com/b77f040cd201f7d1555cdd6f6f6eb9eff215d4e94a9c42a3e310f6a69cf51bbb/68747470733a2f2f3430342d706167656e6f74666f756e642e66697265626173656170702e636f6d2f696d672f6c6f676f2e706e67"]
+    if len(urls) > 0:
+        img = urls[0]
+    else:
+        img = "https://camo.githubusercontent.com/b77f040cd201f7d1555cdd6f6f6eb9eff215d4e94a9c42a3e310f6a69cf51bbb/68747470733a2f2f3430342d706167656e6f74666f756e642e66697265626173656170702e636f6d2f696d672f6c6f676f2e706e67"
+
+    return name, quantity, price, img
 
 def emoji_to_number(emoji):
     for i in range(len(num)):
@@ -30,8 +50,7 @@ def emoji_to_number(emoji):
 def get_max(number):
     if number >10:
         return 10
-    else:
-         return number
+    return number
 
 def add_number(old_number, new_number):
     futur_emoji=[]
@@ -61,22 +80,3 @@ def add_number(old_number, new_number):
                 futur_emoji.append(num[i])
 
     return futur_emoji
-
-def get_property_by_product_name(product_name):
-
-
-    html_content = requests.get("https://www.auchan.fr/recherche?text="+product_name).text
-    soup = BeautifulSoup(html_content, 'html.parser')
-
-    detail = soup.findAll("a", {"class": "product-thumbnail__details-wrapper"})
-    if detail != None:
-        img= detail[0].find("figure").find("img")["src"]
-        most_similar=detail[0].find("p", {"class":"product-thumbnail__description"}).text.replace("  ","").replace("\n", "")
-    else:
-        img="https://www.torkartingowy.eu/wp-content/uploads/2021/03/mobile_404.png"
-        most_similar=str(product_name)
-
-    price=0
-    category=str(uuid.uuid4())
-
-    return {"image": img, "price": price, "category": category, "most_similar": most_similar}

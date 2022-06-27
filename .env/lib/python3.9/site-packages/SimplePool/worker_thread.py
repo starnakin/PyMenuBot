@@ -1,0 +1,24 @@
+import threading
+try:
+    import Queue
+except ImportError:
+    import queue as Queue
+
+
+class WorkerThread(threading.Thread):
+
+    def __init__(self, job_q, result_q):
+        super(WorkerThread, self).__init__()
+        self._job_q = job_q
+        self._result_q = result_q
+
+    def run(self):
+        while True:
+            try:
+                job = self._job_q.get(None)
+            except Queue.Empty:  # Exit the worker if Q empty
+                return True
+            job.execute()
+            self._result_q.put(job)
+            self._job_q.task_done()
+        return True
