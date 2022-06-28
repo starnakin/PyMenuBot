@@ -5,7 +5,7 @@ class Grocery():
     
     def add(self, article):
         if self.containe_by_name(article.name):
-            self.get_article_by_name(article.name).add_quantity(article.quantity)
+            self.get_article_by_name(article.name).add_quantity(int(article.quantity))
         else:
             self.grocery.append(article)
         return self
